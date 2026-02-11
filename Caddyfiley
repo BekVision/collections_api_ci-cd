@@ -1,0 +1,7 @@
+	{
+  auto_https off
+}
+
+api.bek85.me {
+    reverse_proxy backend:8000
+}
