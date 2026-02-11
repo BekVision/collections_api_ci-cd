@@ -33,8 +33,12 @@ def test_create_order_increments_sold_count(client, db_session):
     order_response = client.post(
         "/orders",
         headers={"Authorization": f"Bearer {token}"},
-        json={"items": [{"product_id": product.id, "quantity": 2}]},
+        json={
+            "items": [{"product_id": product.id, "quantity": 2}],
+            "delivery_address_text": "Test address"
+        },
     )
+
     assert order_response.status_code == 201
     payload = order_response.json()
     assert payload["status"] == "Success"
