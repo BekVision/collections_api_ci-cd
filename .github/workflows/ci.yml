@@ -26,9 +26,10 @@ jobs:
           --health-retries=5
 
     env:
-      DATABASE_URL: postgresql+psycopg2://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@localhost:5432/${{ secrets.DB_NAME }}
+      # ✅ DB service bilan bir xil qiymatlar (secrets shart emas)
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@localhost:5432/collection_test_db
 
-      # Agar sizda SECRET_KEY / JWT_SECRET kabi majburiy env bo'lsa, shu yerga qo'shing:
+      # Agar sizda majburiy secret/env bo'lsa, shu yerga qo'shing:
       # SECRET_KEY: test
       # JWT_SECRET: test
 
@@ -39,12 +40,18 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.14"
+          python-version: "3.12"
 
       - name: Install requirements
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          # ✅ Test uchun kerakli paketlar
+          pip install pytest httpx pytest-asyncio
+
+      # ✅ Migratsiya (DB schema tayyor bo'ladi)
+      - name: Run migrations
+        run: alembic upgrade head
 
       - name: Run tests
         run: pytest -q
