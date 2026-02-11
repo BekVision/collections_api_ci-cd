@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile, File, Form
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_db, require_admin
 from app.schemas.product import ProductCreate, ProductListResponse, ProductRead, ProductUpdate
 from app.services.product import ProductService
+from app.utils.file_upload import save_file
 
 router = APIRouter(prefix="/products", tags=["Products"])
 
@@ -61,6 +62,36 @@ def create_product(payload: ProductCreate, db: Session = Depends(get_db)):
     return ProductService(db).create_product(payload)
 
 
+# ✅ NEW: product create (multipart) + image majburiy
+@router.post(
+    "/with-image",
+    response_model=ProductRead,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_admin)],
+)
+async def create_product_with_image(
+    name: str = Form(...),
+    description: str = Form(...),
+    price: float = Form(...),
+    rating: float = Form(0),
+    category_id: int = Form(...),
+    image: UploadFile = File(...),  # ✅ majburiy
+    db: Session = Depends(get_db),
+):
+    image_url = await save_file(image)
+
+    payload = ProductCreate(
+        name=name,
+        description=description,
+        price=price,
+        rating=rating,
+        category_id=category_id,
+        images=[image_url],  # ✅ kamida bitta rasm
+        variants=[],
+    )
+    return ProductService(db).create_product(payload)
+
+
 @router.put("/{product_id}", response_model=ProductRead, dependencies=[Depends(require_admin)])
 def update_product(product_id: int, payload: ProductUpdate, db: Session = Depends(get_db)):
     product = ProductService(db).update_product(product_id, payload)
@@ -74,3 +105,4 @@ def delete_product(product_id: int, db: Session = Depends(get_db)):
     deleted = ProductService(db).delete_product(product_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Product not found")
+    return

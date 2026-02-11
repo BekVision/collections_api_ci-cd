@@ -13,6 +13,12 @@ class OrderItemCreate(BaseSchema):
 class OrderCreate(BaseSchema):
     items: list[OrderItemCreate]
 
+    # ✅ NEW
+    delivery_address_text: str
+    delivery_lat: float | None = None
+    delivery_lng: float | None = None
+    delivery_note: str | None = None
+
 
 class OrderItemRead(BaseSchema):
     id: int
@@ -26,6 +32,13 @@ class OrderItemRead(BaseSchema):
 class OrderRead(BaseSchema):
     id: int
     status: str
+
+    # ✅ NEW
+    delivery_address_text: str | None
+    delivery_lat: float | None
+    delivery_lng: float | None
+    delivery_note: str | None
+
     items: list[OrderItemRead]
     created_at: datetime
 

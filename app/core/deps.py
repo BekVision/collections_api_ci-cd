@@ -7,6 +7,7 @@ from app.core.config import get_settings
 from app.db.session import SessionLocal
 from app.repositories.user import UserRepository
 
+
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 

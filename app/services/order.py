@@ -1,6 +1,8 @@
 from sqlalchemy.orm import Session
 
 from app.models.order import Order, OrderItem, OrderStatus
+from app.models.notification import Notification
+from app.models.user import User
 from app.repositories.order import OrderRepository
 from app.repositories.product import ProductRepository
 from app.schemas.order import OrderCreate
@@ -17,17 +19,21 @@ class OrderService:
         for item in payload.items:
             if item.quantity <= 0:
                 raise ValueError("Quantity must be greater than zero")
+
             product = self.product_repo.get(item.product_id)
             if not product:
                 raise ValueError("Product not found")
+
             unit_price = product.price
             variant_id = None
+
             if item.variant_id is not None:
                 variant = self.product_repo.get_variant(item.variant_id)
                 if not variant or variant.product_id != product.id:
                     raise ValueError("Invalid product variant")
                 unit_price = variant.price
                 variant_id = variant.id
+
             items.append(
                 OrderItem(
                     product_id=product.id,
@@ -37,13 +43,39 @@ class OrderService:
                 )
             )
 
-        order = Order(user_id=user_id, status=OrderStatus.success, items=items)
+        # ✅ NEW: order yaratishda delivery address ham saqlansin
+        order = Order(
+            user_id=user_id,
+            status=OrderStatus.success,
+            items=items,
+            delivery_address_text=payload.delivery_address_text,
+            delivery_lat=payload.delivery_lat,
+            delivery_lng=payload.delivery_lng,
+            delivery_note=payload.delivery_note,
+        )
         created = self.order_repo.create(order)
 
+        # sold counter
         for item in created.items:
             product = self.product_repo.get(item.product_id)
             if product:
                 self.product_repo.increment_sold(product, item.quantity)
+
+        # ✅ NEW: Adminlarga "new order" notification
+        admins = self.db.query(User).filter(User.is_admin == True).all()  # noqa: E712
+        for admin in admins:
+            self.db.add(
+                Notification(
+                    recipient_user_id=admin.id,
+                    type="new_order",
+                    title="New order received",
+                    body=f"Order #{created.id}",
+                    data={"order_id": created.id},
+                )
+            )
+
+        # notif lar DB ga yozilishi uchun commit
+        self.db.commit()
 
         return created
 
