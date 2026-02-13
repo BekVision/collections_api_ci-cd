@@ -51,6 +51,18 @@ app.include_router(notifications.router) # ✅ notifications
 # Media static files
 app.mount("/media", StaticFiles(directory="app/media"), name="media")
 
+from fastapi import FastAPI
+import os
+
+# app = FastAPI()
+
+@app.get("/version")
+def version():
+    return {
+        "commit": os.getenv("GIT_COMMIT", "unknown"),
+        "deployed_at": os.getenv("DEPLOYED_AT", "unknown")
+    }
+
 
 @app.get("/health")
 def health_check() -> dict:
