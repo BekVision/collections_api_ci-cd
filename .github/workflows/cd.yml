@@ -1,0 +1,54 @@
+name: CD - Deploy to DigitalOcean
+
+on:
+  push:
+    branches: ["main"]
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code (optional)
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH (git pull + docker compose up)
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DO_HOST }}
+          username: ${{ secrets.DO_USER }}
+          key: ${{ secrets.DO_SSH_KEY }}
+          port: ${{ secrets.DO_PORT }}
+          script_stop: true
+          command_timeout: 30m
+          script: |
+            set -euo pipefail
+
+            echo "== Go to project directory =="
+            cd "${{ secrets.PROJECT_PATH }}"
+
+            echo "== Git sync (hard reset to origin/main) =="
+            git fetch --all --prune
+            git reset --hard origin/main
+
+            echo "== Sanity checks =="
+            test -f docker-compose.yml || test -f compose.yml
+            test -f .env || (echo "❌ .env not found in PROJECT_PATH" && exit 1)
+            test -f Caddyfile || (echo "❌ Caddyfile not found in PROJECT_PATH" && exit 1)
+
+            echo "== Docker compose up (rebuild) =="
+            docker compose pull || true
+            docker compose up -d --build --remove-orphans
+
+            echo "== Show running containers =="
+            docker compose ps
+
+            echo "== Quick health logs (last lines) =="
+            docker compose logs --tail 60 backend || true
+            docker compose logs --tail 60 caddy || true
+            docker compose logs --tail 60 db || true
+
+            echo "== Done ✅ =="
