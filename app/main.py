@@ -56,13 +56,9 @@ import os
 
 # app = FastAPI()
 
-@app.get("/version")
-def version():
-    return {
-        "commit": os.getenv("GIT_COMMIT", "unknown"),
-        "deployed_at": os.getenv("DEPLOYED_AT", "unknown")
-    }
-
+@app.get("/deploy-check")
+def deploy_check():
+    return {"status": "ok"}
 
 @app.get("/health")
 def health_check() -> dict:
