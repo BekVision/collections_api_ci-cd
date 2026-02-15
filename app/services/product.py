@@ -64,7 +64,7 @@ class ProductService:
             name=payload.name,
             description=payload.description,
             price=payload.price,
-            rating=payload.rating,
+            rating=0,
             category_id=payload.category_id,
         )
         created = self.repo.create(product)

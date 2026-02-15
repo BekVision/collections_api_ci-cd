@@ -4,6 +4,7 @@ from app.models.product import Product, ProductImage, ProductVariant
 from app.models.user import User
 from app.models.notification import Notification
 from app.models.chat_message import ChatMessage
+from app.models.product_feedback import ProductRating, ProductComment
 
 __all__ = [
     "User",
@@ -15,4 +16,6 @@ __all__ = [
     "OrderItem",
     "Notification",
     "ChatMessage",
+    "ProductRating",
+    "ProductComment",
 ]

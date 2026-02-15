@@ -16,6 +16,7 @@ from app.routers import (
     chat,              # websocket chat (eski)
     notifications,     # ✅ yangi
     chat_messages,     # ✅ yangi (REST chat + DB)
+    product_feedback
 )
 
 settings = get_settings()
@@ -47,6 +48,8 @@ app.include_router(recommendations.router)
 app.include_router(chat.router)           # websocket
 app.include_router(chat_messages.router) # ✅ REST chat
 app.include_router(notifications.router) # ✅ notifications
+app.include_router(product_feedback.router)
+
 
 # Media static files
 app.mount("/media", StaticFiles(directory="app/media"), name="media")
