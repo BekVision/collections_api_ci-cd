@@ -52,3 +52,25 @@ class OrderRepository:
         self.db.commit()
         self.db.refresh(order)
         return order
+
+    def get(self, order_id: int) -> Order | None:
+        stmt = (
+            select(Order)
+            .where(Order.id == order_id)
+            .options(
+                selectinload(Order.items)
+                .selectinload(OrderItem.product)
+                .selectinload(Product.images),
+                selectinload(Order.items)
+                .selectinload(OrderItem.product)
+                .selectinload(Product.category),
+                selectinload(Order.items).selectinload(OrderItem.variant),
+            )
+        )
+        return self.db.scalar(stmt)
+
+    def update(self, order: Order) -> Order:
+        self.db.add(order)
+        self.db.commit()
+        self.db.refresh(order)
+        return order

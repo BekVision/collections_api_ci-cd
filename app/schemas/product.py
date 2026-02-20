@@ -26,6 +26,7 @@ class ProductCreate(BaseSchema):
     price: float
     rating: float = 0
     category_id: int
+    stock_count: int = 0
     images: list[str] = []
     variants: list[ProductVariantCreate] = []
 
@@ -38,6 +39,7 @@ class ProductUpdate(BaseSchema):
     category_id: int | None = None
     images: list[str] | None = None
     variants: list[ProductVariantCreate] | None = None
+    stock_count: int | None = None
 
 
 class ProductRead(BaseSchema):
@@ -52,6 +54,7 @@ class ProductRead(BaseSchema):
     views_count: int
     sold_count: int
     created_at: datetime
+    stock_count: int
 
 
 class ProductListResponse(BaseSchema):

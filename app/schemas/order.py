@@ -49,3 +49,6 @@ class OrderListResponse(BaseSchema):
     skip: int
     limit: int
     next_skip: int | None
+
+class OrderStatusUpdate(BaseSchema):
+    status: str

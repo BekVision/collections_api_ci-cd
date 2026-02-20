@@ -8,8 +8,12 @@ from app.db.base import Base
 
 
 class OrderStatus(str, Enum):
-    pending = "Pending"
-    success = "Success"
+    pending = "pending"
+    in_transit = "in_transit"
+    delivered = "delivered"
+    cancelled = "cancelled"
+
+    success = "success"
 
 
 class Order(Base):

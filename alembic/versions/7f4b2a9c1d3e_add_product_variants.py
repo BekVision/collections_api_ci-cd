@@ -36,9 +36,14 @@ def upgrade() -> None:
         ["variant_id"],
         ["id"],
     )
+    op.add_column("products", sa.Column("stock_count", sa.Integer(), nullable=False, server_default="0"))
+    op.execute("ALTER TYPE orderstatus ADD VALUE IF NOT EXISTS 'in_transit'")
+    op.execute("ALTER TYPE orderstatus ADD VALUE IF NOT EXISTS 'delivered'")
+    op.execute("ALTER TYPE orderstatus ADD VALUE IF NOT EXISTS 'cancelled'")
 
 
 def downgrade() -> None:
     op.drop_constraint("fk_order_items_variant_id", "order_items", type_="foreignkey")
     op.drop_column("order_items", "variant_id")
     op.drop_table("product_variants")
+    op.drop_column("products", "stock_count")

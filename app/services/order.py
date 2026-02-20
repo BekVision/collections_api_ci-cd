@@ -6,6 +6,7 @@ from app.models.user import User
 from app.repositories.order import OrderRepository
 from app.repositories.product import ProductRepository
 from app.schemas.order import OrderCreate
+from app.models.order import OrderStatus
 
 
 class OrderService:
@@ -23,6 +24,8 @@ class OrderService:
             product = self.product_repo.get(item.product_id)
             if not product:
                 raise ValueError("Product not found")
+            if product.stock_count < item.quantity:
+                raise ValueError(f"Out of stock: product_id={product.id}")
 
             unit_price = product.price
             variant_id = None
@@ -46,7 +49,7 @@ class OrderService:
         # ✅ NEW: order yaratishda delivery address ham saqlansin
         order = Order(
             user_id=user_id,
-            status=OrderStatus.success,
+            status=OrderStatus.pending,
             items=items,
             delivery_address_text=payload.delivery_address_text,
             delivery_lat=payload.delivery_lat,
@@ -54,6 +57,12 @@ class OrderService:
             delivery_note=payload.delivery_note,
         )
         created = self.order_repo.create(order)
+
+        for item in created.items:
+            product = self.product_repo.get(item.product_id)
+            if product:
+                product.stock_count -= item.quantity
+                self.db.add(product)
 
         # sold counter
         for item in created.items:
@@ -96,3 +105,25 @@ class OrderService:
         total = self.order_repo.count_all()
         next_skip = skip + limit if skip + limit < total else None
         return items, total, next_skip
+
+
+    def update_status(self, order_id: int, new_status: OrderStatus) -> Order:
+        order = self.order_repo.get(order_id)
+        if not order:
+            raise ValueError("Order not found")
+
+        old_status = order.status
+        order.status = new_status
+        self.db.add(order)
+        self.db.commit()
+        self.db.refresh(order)
+
+        # ✅ Agar delivered bo‘lsa sold_count oshirish (faqat 1 marta)
+        if old_status not in (OrderStatus.delivered, OrderStatus.success) and new_status in (OrderStatus.delivered,
+                                                                                             OrderStatus.success):
+            for item in order.items:
+                product = self.product_repo.get(item.product_id)
+                if product:
+                    self.product_repo.increment_sold(product, item.quantity)
+
+        return order

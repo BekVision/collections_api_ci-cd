@@ -66,6 +66,7 @@ class ProductService:
             price=payload.price,
             rating=0,
             category_id=payload.category_id,
+            stock_count=payload.stock_count,
         )
         created = self.repo.create(product)
         if payload.images:
@@ -88,6 +89,8 @@ class ProductService:
             product.rating = payload.rating
         if payload.category_id is not None:
             product.category_id = payload.category_id
+        if payload.stock_count is not None:
+            product.stock_count = payload.stock_count
         updated = self.repo.update(product)
         if payload.images is not None:
             self.repo.set_images(updated, payload.images)
@@ -101,3 +104,11 @@ class ProductService:
             return False
         self.repo.delete(product)
         return True
+
+    def count_products(self) -> int:
+        return self.repo.count(
+            query=None,
+            category_id=None,
+            price_min=None,
+            price_max=None,
+        )

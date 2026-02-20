@@ -27,6 +27,8 @@ class Product(Base):
     ratings = relationship("ProductRating", back_populates="product", cascade="all, delete-orphan")
     comments = relationship("ProductComment", back_populates="product", cascade="all, delete-orphan")
 
+    stock_count: Mapped[int] = mapped_column(Integer, default=0)
+
 
 class ProductImage(Base):
     __tablename__ = "product_images"

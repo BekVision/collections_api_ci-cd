@@ -4,6 +4,8 @@ from sqlalchemy.orm import Session
 from app.core.deps import get_current_user, get_db, require_admin
 from app.schemas.order import OrderCreate, OrderListResponse, OrderRead
 from app.services.order import OrderService
+from app.schemas.order import OrderStatusUpdate
+from app.models.order import OrderStatus
 
 router = APIRouter(prefix="/orders", tags=["Orders"])
 
@@ -70,3 +72,13 @@ def list_all_orders_paged(
         "limit": limit,
         "next_skip": next_skip,
     }
+
+
+@router.put("/{order_id}/status", response_model=OrderRead, dependencies=[Depends(require_admin)])
+def update_order_status(order_id: int, payload: OrderStatusUpdate, db: Session = Depends(get_db)):
+    try:
+        # payload.status string -> enum
+        new_status = OrderStatus(payload.status)
+        return OrderService(db).update_status(order_id, new_status)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
