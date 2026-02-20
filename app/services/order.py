@@ -6,7 +6,6 @@ from app.models.user import User
 from app.repositories.order import OrderRepository
 from app.repositories.product import ProductRepository
 from app.schemas.order import OrderCreate
-from app.models.order import OrderStatus
 
 
 class OrderService:
@@ -17,6 +16,7 @@ class OrderService:
 
     def create_order(self, user_id: int, payload: OrderCreate):
         items: list[OrderItem] = []
+
         for item in payload.items:
             if item.quantity <= 0:
                 raise ValueError("Quantity must be greater than zero")
@@ -46,7 +46,6 @@ class OrderService:
                 )
             )
 
-        # ✅ NEW: order yaratishda delivery address ham saqlansin
         order = Order(
             user_id=user_id,
             status=OrderStatus.pending,
@@ -58,19 +57,12 @@ class OrderService:
         )
         created = self.order_repo.create(order)
 
-        for item in created.items:
-            product = self.product_repo.get(item.product_id)
+        for oi in created.items:
+            product = self.product_repo.get(oi.product_id)
             if product:
-                product.stock_count -= item.quantity
+                product.stock_count -= oi.quantity
                 self.db.add(product)
 
-        # sold counter
-        for item in created.items:
-            product = self.product_repo.get(item.product_id)
-            if product:
-                self.product_repo.increment_sold(product, item.quantity)
-
-        # ✅ NEW: Adminlarga "new order" notification
         admins = self.db.query(User).filter(User.is_admin == True).all()  # noqa: E712
         for admin in admins:
             self.db.add(
@@ -83,8 +75,8 @@ class OrderService:
                 )
             )
 
-        # notif lar DB ga yozilishi uchun commit
         self.db.commit()
+        self.db.refresh(created)
 
         return created
 
@@ -106,24 +98,31 @@ class OrderService:
         next_skip = skip + limit if skip + limit < total else None
         return items, total, next_skip
 
-
     def update_status(self, order_id: int, new_status: OrderStatus) -> Order:
         order = self.order_repo.get(order_id)
         if not order:
             raise ValueError("Order not found")
 
         old_status = order.status
+
+        # delivered/success ga o'tish flagi
+        was_delivered = old_status in (OrderStatus.delivered, OrderStatus.success)
+        will_be_delivered = new_status in (OrderStatus.delivered, OrderStatus.success)
+
+        # statusni o'zgartiramiz
         order.status = new_status
         self.db.add(order)
-        self.db.commit()
-        self.db.refresh(order)
 
-        # ✅ Agar delivered bo‘lsa sold_count oshirish (faqat 1 marta)
-        if old_status not in (OrderStatus.delivered, OrderStatus.success) and new_status in (OrderStatus.delivered,
-                                                                                             OrderStatus.success):
-            for item in order.items:
-                product = self.product_repo.get(item.product_id)
+        if not was_delivered and will_be_delivered:
+            for oi in order.items:
+                product = self.product_repo.get(oi.product_id)
                 if product:
-                    self.product_repo.increment_sold(product, item.quantity)
+                    product.sold_count += oi.quantity
+                    self.db.add(product)
+
+        self.db.commit()
+
+        # refresh order
+        self.db.refresh(order)
 
         return order
