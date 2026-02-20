@@ -15,6 +15,7 @@ def test_create_order_increments_sold_count(client, db_session):
         price=120.0,
         rating=4.5,
         category_id=category.id,
+        stock_count=10,
     )
     db_session.add(product)
     db_session.commit()
