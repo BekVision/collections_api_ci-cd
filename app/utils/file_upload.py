@@ -3,8 +3,11 @@ import uuid
 from fastapi import UploadFile
 import aiofiles
 
-MEDIA_DIR = "app/media"
+from app.core.config import get_settings
 
+settings = get_settings()
+
+MEDIA_DIR = "app/media"
 
 async def save_file(file: UploadFile) -> str:
     os.makedirs(MEDIA_DIR, exist_ok=True)
@@ -16,4 +19,5 @@ async def save_file(file: UploadFile) -> str:
     async with aiofiles.open(path, "wb") as out:
         await out.write(await file.read())
 
-    return f"/media/{filename}"
+    # ✅ Mobil uchun to‘liq URL
+    return f"{settings.public_base_url}/media/{filename}"

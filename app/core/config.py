@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     cors_allow_credentials: bool = True
     cors_allow_methods: list[str] = Field(default_factory=lambda: ["*"])
     cors_allow_headers: list[str] = Field(default_factory=lambda: ["*"])
-
+    public_base_url: str = "https://bek85.me"
 
 @lru_cache
 def get_settings() -> Settings:
