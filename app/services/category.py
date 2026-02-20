@@ -19,14 +19,19 @@ class CategoryService:
         return items, total, next_skip
 
     def create_category(self, payload: CategoryCreate):
-        category = Category(name=payload.name)
+        category = Category(
+            name=payload.name,
+            icon_url=payload.icon_url
+        )
         return self.repo.create(category)
 
     def update_category(self, category_id: int, payload: CategoryUpdate):
         category = self.repo.get(category_id)
         if not category:
             return None
+
         category.name = payload.name
+        category.icon_url = payload.icon_url
         return self.repo.update(category)
 
     def delete_category(self, category_id: int) -> bool:
