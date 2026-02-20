@@ -50,6 +50,10 @@ def list_products_paged(
         "next_skip": next_skip,
     }
 
+@router.get("/count")
+def products_count(db: Session = Depends(get_db)):
+    total = ProductService(db).count_products()
+    return {"total": total}
 
 @router.get("/{product_id}", response_model=ProductRead)
 def get_product(product_id: int, db: Session = Depends(get_db)):
@@ -58,10 +62,6 @@ def get_product(product_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Product not found")
     return product
 
-@router.get("/count")
-def products_count(db: Session = Depends(get_db)):
-    total = ProductService(db).count_products()
-    return {"total": total}
 
 @router.post("", response_model=ProductRead, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_admin)])
 def create_product(payload: ProductCreate, db: Session = Depends(get_db)):
@@ -81,8 +81,6 @@ async def create_product_with_images(
     rating: float = Form(0),
     category_id: int = Form(...),
     stock_count: int = Form(0),
-
-    # old: image: UploadFile = File(...)
     images: List[UploadFile] = File(...),
 
     db: Session = Depends(get_db),
