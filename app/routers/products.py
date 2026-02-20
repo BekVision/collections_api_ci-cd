@@ -74,7 +74,7 @@ def create_product(payload: ProductCreate, db: Session = Depends(get_db)):
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(require_admin)],
 )
-async def create_product_with_images(
+async def create_product_with_image(
     name: str = Form(...),
     description: str = Form(...),
     price: float = Form(...),
@@ -82,22 +82,14 @@ async def create_product_with_images(
     category_id: int = Form(...),
     stock_count: int = Form(0),
     images: List[UploadFile] = File(...),
-
     db: Session = Depends(get_db),
 ):
-    # ✅ max 4 ta
     if len(images) > 4:
         raise HTTPException(status_code=400, detail="Maximum 4 images allowed")
 
-    allowed = {"image/jpeg", "image/png", "image/webp"}
+    image_urls: list[str] = []
     for img in images:
-        if img.content_type not in allowed:
-            raise HTTPException(status_code=400, detail=f"Invalid file type: {img.content_type}")
-
-    image_urls = []
-    for img in images:
-        url = await save_file(img)
-        image_urls.append(url)
+        image_urls.append(await save_file(img))
 
     payload = ProductCreate(
         name=name,
@@ -110,7 +102,6 @@ async def create_product_with_images(
         variants=[],
     )
     return ProductService(db).create_product(payload)
-
 
 @router.put("/{product_id}", response_model=ProductRead, dependencies=[Depends(require_admin)])
 def update_product(product_id: int, payload: ProductUpdate, db: Session = Depends(get_db)):
