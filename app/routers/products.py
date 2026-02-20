@@ -1,3 +1,5 @@
+from typing import List
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile, File, Form
 from sqlalchemy.orm import Session
 
@@ -69,16 +71,31 @@ def create_product(payload: ProductCreate, db: Session = Depends(get_db)):
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(require_admin)],
 )
-async def create_product_with_image(
+async def create_product_with_images(
     name: str = Form(...),
     description: str = Form(...),
     price: float = Form(...),
     rating: float = Form(0),
     category_id: int = Form(...),
-    image: UploadFile = File(...),  # ✅ majburiy
+
+    # old: image: UploadFile = File(...)
+    images: List[UploadFile] = File(...),  # ✅ ko‘p rasm
+
     db: Session = Depends(get_db),
 ):
-    image_url = await save_file(image)
+    # ✅ max 4 ta
+    if len(images) > 4:
+        raise HTTPException(status_code=400, detail="Maximum 4 images allowed")
+
+    allowed = {"image/jpeg", "image/png", "image/webp"}
+    for img in images:
+        if img.content_type not in allowed:
+            raise HTTPException(status_code=400, detail=f"Invalid file type: {img.content_type}")
+
+    image_urls = []
+    for img in images:
+        url = await save_file(img)
+        image_urls.append(url)
 
     payload = ProductCreate(
         name=name,
@@ -86,7 +103,7 @@ async def create_product_with_image(
         price=price,
         rating=rating,
         category_id=category_id,
-        images=[image_url],  # ✅ kamida bitta rasm
+        images=image_urls,
         variants=[],
     )
     return ProductService(db).create_product(payload)
