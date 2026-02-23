@@ -13,18 +13,16 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
 
   backend:
     build: .
     restart: unless-stopped
     env_file:
       - .env
-    ports:
-      - "8000:8000"
     depends_on:
       db:
         condition: service_healthy
@@ -37,6 +35,13 @@ services:
       alembic upgrade head &&
       uvicorn app.main:app --host 0.0.0.0 --port 8000
       "
+    healthcheck:
+      # /docs 200 qaytarsa backend tayyor degani
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/docs', timeout=2)\""]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 20s
 
   caddy:
     image: caddy:2
@@ -44,14 +49,17 @@ services:
     ports:
       - "80:80"
       - "443:443"
+    depends_on:
+      backend:
+        condition: service_healthy
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - /root/ssl:/root/ssl:ro
-    depends_on:
-      - backend
+      - caddy_data:/data
+      - caddy_config:/config
 
 volumes:
   postgres_data:
+  media_data:
   caddy_data:
   caddy_config:
-  media_data:
