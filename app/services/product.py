@@ -107,8 +107,7 @@ class ProductService:
         if not product:
             return False
 
-        # ✅ orderda ishlatilgan bo‘lsa o‘chirmaymiz (500 emas, 409)
-        cnt = self.db.scalar(
+        cnt = self.repo.db.scalar(
             select(func.count()).select_from(OrderItem).where(OrderItem.product_id == product_id)
         ) or 0
         if cnt > 0:
@@ -117,8 +116,7 @@ class ProductService:
                 detail="Cannot delete product: it is used in orders (order_items)."
             )
 
-        # ✅ order yo‘q bo‘lsa, avval rasmlarini o‘chiramiz
-        self.db.execute(
+        self.repo.db.execute(
             ProductImage.__table__.delete().where(ProductImage.product_id == product_id)
         )
 
