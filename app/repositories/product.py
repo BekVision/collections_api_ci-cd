@@ -93,8 +93,6 @@ class ProductRepository:
         self.db.refresh(product)
         return product
 
-
-
     def delete(self, product) -> None:
         try:
             self.db.delete(product)
