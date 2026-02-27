@@ -110,11 +110,11 @@ class ProductService:
         cnt = self.repo.db.scalar(
             select(func.count()).select_from(OrderItem).where(OrderItem.product_id == product_id)
         ) or 0
-        if cnt > 0:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Cannot delete product: it is used in orders (order_items)."
-            )
+        # if cnt > 0:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_409_CONFLICT,
+        #         detail="Cannot delete product: it is used in orders (order_items)."
+        #     )
 
         self.repo.db.execute(
             ProductImage.__table__.delete().where(ProductImage.product_id == product_id)

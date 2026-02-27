@@ -3,7 +3,7 @@ from enum import Enum
 
 from sqlalchemy import DateTime, Enum as SqlEnum, ForeignKey, Integer, Numeric, Float, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
+from typing import Optional
 from app.db.base import Base
 
 
@@ -39,7 +39,10 @@ class OrderItem(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     order_id: Mapped[int] = mapped_column(ForeignKey("orders.id"))
-    product_id: Mapped[int] = mapped_column(ForeignKey("products.id"))
+    product_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("products.id", ondelete="SET NULL"),
+        nullable=True
+    )
     variant_id: Mapped[int | None] = mapped_column(ForeignKey("product_variants.id"), nullable=True)
 
     quantity: Mapped[int] = mapped_column(Integer)
