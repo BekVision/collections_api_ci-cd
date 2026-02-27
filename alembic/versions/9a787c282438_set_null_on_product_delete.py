@@ -1,3 +1,22 @@
+"""set null on product delete
+
+Revision ID: 9a787c282438
+Revises: 7f4b2a9c1d3e
+Create Date: 2026-02-27 10:55:07.836101
+
+"""
+from __future__ import annotations
+
+from alembic import op
+import sqlalchemy as sa
+
+
+
+revision = '9a787c282438'
+down_revision = '7f4b2a9c1d3e'
+branch_labels = None
+depends_on = None
+
 from alembic import op
 import sqlalchemy as sa
 
