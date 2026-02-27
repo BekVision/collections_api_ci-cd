@@ -2,7 +2,7 @@ from typing import Sequence
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
-
+from sqlalchemy.exc import IntegrityError
 from app.models.product import Product, ProductImage, ProductVariant
 
 
@@ -93,9 +93,15 @@ class ProductRepository:
         self.db.refresh(product)
         return product
 
-    def delete(self, product: Product) -> None:
-        self.db.delete(product)
-        self.db.commit()
+
+
+    def delete(self, product) -> None:
+        try:
+            self.db.delete(product)
+            self.db.commit()
+        except IntegrityError:
+            self.db.rollback()
+            raise
 
     def set_images(self, product: Product, images: Sequence[str]) -> Product:
         product.images = [ProductImage(url=url) for url in images]

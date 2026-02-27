@@ -3,6 +3,10 @@ from sqlalchemy.orm import Session
 from app.models.product import Product
 from app.repositories.product import ProductRepository
 from app.schemas.product import ProductCreate, ProductUpdate
+from fastapi import HTTPException, status
+from sqlalchemy import select, func
+from app.models.order import OrderItem
+from app.models.product import ProductImage
 
 
 class ProductService:
@@ -102,6 +106,22 @@ class ProductService:
         product = self.repo.get(product_id)
         if not product:
             return False
+
+        # ✅ 1) ORDER ITEM BOR-yo‘qligini tekshirish (agar bo'lsa - o'chirmaymiz)
+        cnt = self.db.scalar(
+            select(func.count()).select_from(OrderItem).where(OrderItem.product_id == product_id)
+        ) or 0
+        if cnt > 0:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Cannot delete product: it is used in orders (order_items)."
+            )
+
+        # ✅ 2) Product images bor bo'lsa o'chirib tashlaymiz (order yo'q bo'lsa bemalol)
+        self.db.execute(
+            ProductImage.__table__.delete().where(ProductImage.product_id == product_id)
+        )
+
         self.repo.delete(product)
         return True
 
